@@ -1,4 +1,5 @@
-import { IndexResult } from '../utils/dktAnalysis'
+import { IndexResult } from '../utils/dkt'
+import { useI18n } from '../i18n'
 import './IndexDetail.css'
 
 interface Props {
@@ -29,6 +30,7 @@ const ADVANCED_LATERALIZATION_INDICES = [
 const ALL_LATERALIZATION_INDICES = [...BASIC_LATERALIZATION_INDICES, ...ADVANCED_LATERALIZATION_INDICES]
 
 export default function IndexDetail({ index, onBack }: Props) {
+  const { t } = useI18n()
   const isLateralizationIndex = ALL_LATERALIZATION_INDICES.includes(index.name)
 
   const getPercentileColor = (p: number) => {
@@ -41,13 +43,13 @@ export default function IndexDetail({ index, onBack }: Props) {
   }
 
   const getPercentileLabel = (p: number) => {
-    if (p >= 98) return '卓越'
-    if (p >= 93) return '优秀'
-    if (p >= 84) return '良好'
-    if (p >= 70) return '较好'
-    if (p >= 30) return '正常'
-    if (p >= 16) return '偏低'
-    return '需关注'
+    if (p >= 98) return t.scores.excellent
+    if (p >= 93) return t.scores.good
+    if (p >= 84) return t.scores.aboveAverage
+    if (p >= 70) return t.scores.aboveAverage
+    if (p >= 30) return t.scores.average
+    if (p >= 16) return t.scores.belowAverage
+    return t.scores.needsAttention
   }
 
   // 侧化指标的百分比计算 - 根据不同指标类型使用不同的阈值范围
@@ -112,82 +114,82 @@ export default function IndexDetail({ index, onBack }: Props) {
   const getLateralizationLabel = (): string => {
     const value = index.value
     if (index.name === 'Handedness Index') {
-      if (value >= 1.28) return '极纯右利手'
-      if (value >= 0.84) return '强右利手'
-      if (value >= 0.52) return '中等右利手'
-      if (value >= -0.52) return '双手协调'
-      if (value >= -0.84) return '中等左利手'
-      return '强左利手'
+      if (value >= 1.28) return t.lateralization.extreme + ' ' + t.lateralization.rightHand
+      if (value >= 0.84) return t.lateralization.strong + ' ' + t.lateralization.rightHand
+      if (value >= 0.52) return t.lateralization.rightHand
+      if (value >= -0.52) return t.lateralization.ambidextrous
+      if (value >= -0.84) return t.lateralization.leftHand
+      return t.lateralization.strong + ' ' + t.lateralization.leftHand
     } else if (index.name === 'Dominant Eye Index') {
-      if (value >= 1.5) return '极强右眼'
-      if (value >= 0.8) return '明显右眼'
-      if (value >= 0.3) return '轻度右眼'
-      if (value >= -0.3) return '双眼均衡'
-      if (value >= -0.8) return '轻度左眼'
-      return '明显左眼'
+      if (value >= 1.5) return t.lateralization.extreme + ' ' + t.lateralization.rightEye
+      if (value >= 0.8) return t.lateralization.strong + ' ' + t.lateralization.rightEye
+      if (value >= 0.3) return t.lateralization.rightEye
+      if (value >= -0.3) return t.lateralization.balanced
+      if (value >= -0.8) return t.lateralization.leftEye
+      return t.lateralization.strong + ' ' + t.lateralization.leftEye
     } else if (index.name === 'Preferred Nostril Index') {
-      if (value >= 1.2) return '极强右鼻孔'
-      if (value >= 0.7) return '明显右鼻孔'
-      if (value >= 0.3) return '轻度右鼻孔'
-      if (value >= -0.3) return '双鼻孔均衡'
-      if (value >= -0.7) return '轻度左鼻孔'
-      if (value >= -1.2) return '明显左鼻孔'
-      return '极强左鼻孔'
+      if (value >= 1.2) return t.lateralization.extreme + ' ' + t.lateralization.rightNostril
+      if (value >= 0.7) return t.lateralization.strong + ' ' + t.lateralization.rightNostril
+      if (value >= 0.3) return t.lateralization.rightNostril
+      if (value >= -0.3) return t.lateralization.balanced
+      if (value >= -0.7) return t.lateralization.leftNostril
+      if (value >= -1.2) return t.lateralization.strong + ' ' + t.lateralization.leftNostril
+      return t.lateralization.extreme + ' ' + t.lateralization.leftNostril
     } else if (index.name === 'Language Lateralization Index') {
-      if (value >= 0.20) return '典型左侧化'
-      if (value >= 0.05) return '弱左侧化'
-      if (value >= -0.05) return '双侧化'
-      if (value >= -0.15) return '弱右侧化'
-      return '显著右侧化'
+      if (value >= 0.20) return t.lateralization.typical + ' ' + t.lateralization.leftBrain
+      if (value >= 0.05) return t.lateralization.weak + ' ' + t.lateralization.leftBrain
+      if (value >= -0.05) return t.lateralization.bilateral
+      if (value >= -0.15) return t.lateralization.weak + ' ' + t.lateralization.rightBrain
+      return t.lateralization.atypical + ' ' + t.lateralization.rightBrain
     } else if (index.name === 'Spatial Attention Lateralization Index') {
-      if (value >= 0.80) return '极强右偏'
-      if (value >= 0.40) return '明显右偏'
-      if (value >= -0.20) return '均衡'
-      if (value >= -0.40) return '轻度左偏'
-      return '明显左偏'
+      if (value >= 0.80) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.40) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.20) return t.lateralization.balanced
+      if (value >= -0.40) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (index.name === 'Emotion Processing Lateralization Index') {
-      if (value >= 0.90) return '极强右偏'
-      if (value >= 0.50) return '明显右偏'
-      if (value >= -0.30) return '均衡'
-      if (value >= -0.50) return '轻度左偏'
-      return '左偏(抑郁倾向)'
+      if (value >= 0.90) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.50) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.30) return t.lateralization.balanced
+      if (value >= -0.50) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (index.name === 'Face Recognition Lateralization Index') {
-      if (value >= 1.00) return '极强右偏'
-      if (value >= 0.60) return '明显右偏'
-      if (value >= -0.20) return '均衡'
-      if (value >= -0.60) return '轻度左偏'
-      return '罕见左偏'
+      if (value >= 1.00) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.60) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.20) return t.lateralization.balanced
+      if (value >= -0.60) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (index.name === 'Music Perception Lateralization Index') {
-      if (value >= 1.20) return '极强右偏'
-      if (value >= 0.70) return '明显右偏'
-      if (value >= -0.30) return '均衡'
-      if (value >= -0.70) return '轻度左偏'
-      return '罕见左偏'
+      if (value >= 1.20) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.70) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.30) return t.lateralization.balanced
+      if (value >= -0.70) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (index.name === 'Theory of Mind Lateralization Index') {
-      if (value >= 0.80) return '极强右偏'
-      if (value >= 0.40) return '明显右偏'
-      if (value >= -0.20) return '均衡'
-      if (value >= -0.40) return '轻度左偏'
-      return '明显左偏'
+      if (value >= 0.80) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.40) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.20) return t.lateralization.balanced
+      if (value >= -0.40) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (index.name === 'Logical Reasoning Lateralization Index') {
       // 逻辑推理：负值=左脑优势
-      if (value <= -0.80) return '极强左脑'
-      if (value <= -0.50) return '显著左脑'
-      if (value <= -0.20) return '轻度左脑'
-      if (value <= 0.20) return '均衡'
-      if (value <= 0.50) return '右脑优势'
-      return '显著右脑'
+      if (value <= -0.80) return t.lateralization.extreme + ' ' + t.lateralization.leftBrain
+      if (value <= -0.50) return t.lateralization.strong + ' ' + t.lateralization.leftBrain
+      if (value <= -0.20) return t.lateralization.leftBrain
+      if (value <= 0.20) return t.lateralization.balanced
+      if (value <= 0.50) return t.lateralization.rightBrain
+      return t.lateralization.strong + ' ' + t.lateralization.rightBrain
     } else if (index.name === 'Mathematical Ability Lateralization Index') {
       // 数学能力：负值=左脑优势
-      if (value <= -0.90) return '极强左脑'
-      if (value <= -0.60) return '显著左脑'
-      if (value <= -0.20) return '轻度左脑'
-      if (value <= 0.20) return '均衡'
-      if (value <= 0.40) return '右脑优势'
-      return '显著右脑'
+      if (value <= -0.90) return t.lateralization.extreme + ' ' + t.lateralization.leftBrain
+      if (value <= -0.60) return t.lateralization.strong + ' ' + t.lateralization.leftBrain
+      if (value <= -0.20) return t.lateralization.leftBrain
+      if (value <= 0.20) return t.lateralization.balanced
+      if (value <= 0.40) return t.lateralization.rightBrain
+      return t.lateralization.strong + ' ' + t.lateralization.rightBrain
     }
     // 默认
-    return '均衡'
+    return t.lateralization.balanced
   }
 
   const lateralizationPercent = isLateralizationIndex ? getLateralizationPercent(index.value) : 0
@@ -196,11 +198,11 @@ export default function IndexDetail({ index, onBack }: Props) {
   return (
     <div className="index-detail-page">
       <button className="back-button" onClick={onBack}>
-        ← 返回
+        {t.indexDetail.backButton}
       </button>
 
       <header className="detail-header">
-        <h1>{index.nameCN}</h1>
+        <h1>{t.dkt.indexNames[index.name as keyof typeof t.dkt.indexNames]}</h1>
         <p className="detail-name-en">{index.name}</p>
       </header>
 
@@ -211,7 +213,7 @@ export default function IndexDetail({ index, onBack }: Props) {
             <div className="score-display">
               <div className="score-main">
                 <span className="score-number">{index.value}</span>
-                <span className="score-unit">偏侧指数</span>
+                <span className="score-unit">{t.indexDetail.lateralizationIndex}</span>
               </div>
               <div className="score-percentile">
                 <span 
@@ -233,39 +235,39 @@ export default function IndexDetail({ index, onBack }: Props) {
               <div className="lat-bar-labels">
                 {index.name === 'Logical Reasoning Lateralization Index' || index.name === 'Mathematical Ability Lateralization Index' ? (
                   <>
-                    <span className="lat-label-left">左脑</span>
-                    <span className="lat-label-center">均衡</span>
-                    <span className="lat-label-right">右脑</span>
+                    <span className="lat-label-left">{t.lateralization.leftBrain}</span>
+                    <span className="lat-label-center">{t.lateralization.balanced}</span>
+                    <span className="lat-label-right">{t.lateralization.rightBrain}</span>
                   </>
                 ) : index.name === 'Handedness Index' ? (
                   <>
-                    <span className="lat-label-left">左手</span>
-                    <span className="lat-label-center">双手</span>
-                    <span className="lat-label-right">右手</span>
+                    <span className="lat-label-left">{t.lateralization.leftHand}</span>
+                    <span className="lat-label-center">{t.lateralization.ambidextrous}</span>
+                    <span className="lat-label-right">{t.lateralization.rightHand}</span>
                   </>
                 ) : index.name === 'Dominant Eye Index' ? (
                   <>
-                    <span className="lat-label-left">左眼</span>
-                    <span className="lat-label-center">均衡</span>
-                    <span className="lat-label-right">右眼</span>
+                    <span className="lat-label-left">{t.lateralization.leftEye}</span>
+                    <span className="lat-label-center">{t.lateralization.balanced}</span>
+                    <span className="lat-label-right">{t.lateralization.rightEye}</span>
                   </>
                 ) : index.name === 'Preferred Nostril Index' ? (
                   <>
-                    <span className="lat-label-left">左鼻</span>
-                    <span className="lat-label-center">均衡</span>
-                    <span className="lat-label-right">右鼻</span>
+                    <span className="lat-label-left">{t.lateralization.leftNostril}</span>
+                    <span className="lat-label-center">{t.lateralization.balanced}</span>
+                    <span className="lat-label-right">{t.lateralization.rightNostril}</span>
                   </>
                 ) : index.name === 'Language Lateralization Index' ? (
                   <>
-                    <span className="lat-label-left">左脑</span>
-                    <span className="lat-label-center">双侧</span>
-                    <span className="lat-label-right">右脑</span>
+                    <span className="lat-label-left">{t.lateralization.leftBrain}</span>
+                    <span className="lat-label-center">{t.lateralization.bilateral}</span>
+                    <span className="lat-label-right">{t.lateralization.rightBrain}</span>
                   </>
                 ) : (
                   <>
-                    <span className="lat-label-left">L侧</span>
-                    <span className="lat-label-center">均衡</span>
-                    <span className="lat-label-right">R侧</span>
+                    <span className="lat-label-left">{t.dkt.lateralizationLabels.leftSide}</span>
+                    <span className="lat-label-center">{t.lateralization.balanced}</span>
+                    <span className="lat-label-right">{t.dkt.lateralizationLabels.rightSide}</span>
                   </>
                 )}
               </div>
@@ -276,7 +278,7 @@ export default function IndexDetail({ index, onBack }: Props) {
             <div className="score-display">
               <div className="score-main">
                 <span className="score-number">{index.value}</span>
-                <span className="score-unit">z-score</span>
+                <span className="score-unit">{t.indexDetail.zScore}</span>
               </div>
               <div className="score-percentile">
                 <div 
@@ -284,7 +286,7 @@ export default function IndexDetail({ index, onBack }: Props) {
                   style={{ borderColor: getPercentileColor(index.percentile) }}
                 >
                   <span style={{ color: getPercentileColor(index.percentile) }}>
-                    前{100 - index.percentile}%
+                    {t.indexDetail.top}{100 - index.percentile}%
                   </span>
                 </div>
                 <span 
@@ -323,7 +325,7 @@ export default function IndexDetail({ index, onBack }: Props) {
 
       {/* 解读 */}
       <section className="detail-section">
-        <h2>📝 结果解读</h2>
+        <h2>{t.indexDetail.interpretation}</h2>
         <div className="interpretation-box">
           <p>{index.interpretation}</p>
         </div>
@@ -331,7 +333,7 @@ export default function IndexDetail({ index, onBack }: Props) {
 
       {/* 阈值标准 */}
       <section className="detail-section">
-        <h2>📊 阈值标准</h2>
+        <h2>{t.indexDetail.thresholdStandard}</h2>
         <div className="threshold-box">
           <code>{index.threshold}</code>
         </div>
@@ -339,14 +341,14 @@ export default function IndexDetail({ index, onBack }: Props) {
 
       {/* 计算方法 */}
       <section className="detail-section">
-        <h2>🔬 计算方法</h2>
+        <h2>{t.indexDetail.calculationMethod}</h2>
         <div className="method-box">
           <div className="method-item">
-            <span className="method-label">计算公式:</span>
+            <span className="method-label">{t.indexDetail.formula}:</span>
             <code className="formula">{index.formula}</code>
           </div>
           <div className="method-item">
-            <span className="method-label">指标权重:</span>
+            <span className="method-label">{t.indexDetail.weights}:</span>
             <span>{index.weights}</span>
           </div>
         </div>
@@ -354,7 +356,7 @@ export default function IndexDetail({ index, onBack }: Props) {
 
       {/* 涉及脑区 */}
       <section className="detail-section">
-        <h2>🧠 涉及脑区</h2>
+        <h2>{t.indexDetail.brainRegions}</h2>
         <div className="regions-list">
           {index.regions.map((r, i) => (
             <span key={i} className="region-chip">{r}</span>
@@ -365,18 +367,18 @@ export default function IndexDetail({ index, onBack }: Props) {
       {/* Z-Score 详情表格 */}
       {index.details && index.details.length > 0 && (
         <section className="detail-section">
-          <h2>📋 各区域 Z-Score 详情</h2>
+          <h2>{t.indexDetail.zScoreDetails}</h2>
           <div className="table-container">
             <table className="zscore-table">
               <thead>
                 <tr>
-                  <th>脑区</th>
-                  <th>权重</th>
-                  <th>左侧 z</th>
-                  <th>右侧 z</th>
-                  <th>左贡献</th>
-                  <th>右贡献</th>
-                  <th>厚:表:体</th>
+                  <th>{t.indexDetail.region}</th>
+                  <th>{t.indexDetail.weight}</th>
+                  <th>{t.indexDetail.leftZ}</th>
+                  <th>{t.indexDetail.rightZ}</th>
+                  <th>{t.indexDetail.leftContribution}</th>
+                  <th>{t.indexDetail.rightContribution}</th>
+                  <th>{t.indexDetail.thickSurfVol}</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,14 +401,14 @@ export default function IndexDetail({ index, onBack }: Props) {
             </table>
           </div>
           <p className="table-note">
-            💡 z-score 表示与参考人群平均值的标准差距离。正值表示高于平均，负值表示低于平均。
+            {t.indexDetail.zScoreNote}
           </p>
         </section>
       )}
 
       {/* 参考文献 */}
       <section className="detail-section">
-        <h2>📚 参考文献</h2>
+        <h2>{t.indexDetail.references}</h2>
         <div className="references-list">
           {index.references.map((r, i) => (
             <div key={i} className="reference-item">
@@ -419,7 +421,7 @@ export default function IndexDetail({ index, onBack }: Props) {
 
       {/* 免责声明 */}
       <footer className="detail-footer">
-        <p>⚠️ 本指标基于脑结构数据的统计推断，仅供科研和参考使用。实际能力需要通过行为测试来确认。</p>
+        <p>{t.indexDetail.disclaimer}</p>
       </footer>
     </div>
   )

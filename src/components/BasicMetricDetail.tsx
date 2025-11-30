@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n'
 import './BasicMetricDetail.css'
 
 export interface BasicMetric {
@@ -19,10 +20,12 @@ interface Props {
 }
 
 export default function BasicMetricDetail({ metric, onBack }: Props) {
+  const { t } = useI18n()
+  
   return (
     <div className="basic-metric-detail">
       <button className="back-button" onClick={onBack}>
-        ← 返回
+        {t.basicMetricDetail.backButton}
       </button>
 
       <header className="detail-header">
@@ -37,14 +40,14 @@ export default function BasicMetricDetail({ metric, onBack }: Props) {
           <span className="value-unit">{metric.unit}</span>
         </div>
         <div className="normal-range">
-          <span className="range-label">参考范围:</span>
+          <span className="range-label">{t.basicMetricDetail.referenceRange}:</span>
           <span className="range-value">{metric.normalRange}</span>
         </div>
       </section>
 
       {/* 指标说明 */}
       <section className="detail-section">
-        <h2>📝 指标说明</h2>
+        <h2>{t.basicMetricDetail.metricDescription}</h2>
         <div className="description-box">
           <p>{metric.description}</p>
         </div>
@@ -52,7 +55,7 @@ export default function BasicMetricDetail({ metric, onBack }: Props) {
 
       {/* 结果解读 */}
       <section className="detail-section">
-        <h2>🔍 结果解读</h2>
+        <h2>{t.basicMetricDetail.resultInterpretation}</h2>
         <div className="interpretation-box">
           <p>{metric.interpretation}</p>
         </div>
@@ -60,7 +63,7 @@ export default function BasicMetricDetail({ metric, onBack }: Props) {
 
       {/* 相关功能 */}
       <section className="detail-section">
-        <h2>🧠 相关脑功能</h2>
+        <h2>{t.basicMetricDetail.relatedFunctions}</h2>
         <div className="functions-list">
           {metric.relatedFunctions.map((func, i) => (
             <div key={i} className="function-item">
@@ -73,7 +76,7 @@ export default function BasicMetricDetail({ metric, onBack }: Props) {
 
       {/* 参考文献 */}
       <section className="detail-section">
-        <h2>📚 参考文献</h2>
+        <h2>{t.basicMetricDetail.references}</h2>
         <div className="references-list">
           {metric.references.map((ref, i) => (
             <div key={i} className="reference-item">
@@ -85,7 +88,7 @@ export default function BasicMetricDetail({ metric, onBack }: Props) {
       </section>
 
       <footer className="detail-footer">
-        <p>⚠️ 脑容量指标受年龄、性别、体型等多种因素影响，需结合个人情况综合解读。</p>
+        <p>{t.basicMetricDetail.disclaimer}</p>
       </footer>
     </div>
   )

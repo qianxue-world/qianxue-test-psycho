@@ -4,40 +4,159 @@
   box-sizing: border-box;
 }
 
+/* 导入可爱字体 */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  background: #f5f7fa;
+  font-family: 'Quicksand', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #ffe4ec 0%, #ffd6e7 25%, #e8d5f9 50%, #d4e5ff 75%, #ffe4f3 100%);
+  background-attachment: fixed;
   min-height: 100vh;
   line-height: 1.6;
-  color: #333;
+  color: #6b4c7a;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ✨ 梦幻星星背景 */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #ffb6d9, transparent),
+    radial-gradient(2px 2px at 40px 70px, #c9b1ff, transparent),
+    radial-gradient(2px 2px at 50px 160px, #ffb6d9, transparent),
+    radial-gradient(2px 2px at 90px 40px, #b8d4ff, transparent),
+    radial-gradient(2px 2px at 130px 80px, #ffb6d9, transparent),
+    radial-gradient(3px 3px at 160px 120px, #c9b1ff, transparent),
+    radial-gradient(2px 2px at 200px 50px, #ffb6d9, transparent),
+    radial-gradient(2px 2px at 250px 90px, #b8d4ff, transparent),
+    radial-gradient(2px 2px at 300px 150px, #ffb6d9, transparent),
+    radial-gradient(3px 3px at 350px 30px, #c9b1ff, transparent),
+    radial-gradient(2px 2px at 400px 100px, #ffb6d9, transparent),
+    radial-gradient(2px 2px at 450px 60px, #b8d4ff, transparent),
+    radial-gradient(2px 2px at 500px 130px, #c9b1ff, transparent),
+    radial-gradient(2px 2px at 550px 80px, #ffb6d9, transparent),
+    radial-gradient(3px 3px at 600px 140px, #b8d4ff, transparent);
+  animation: twinkle 4s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 💖 浮动爱心装饰 */
+body::after {
+  content: '💖 ✨ 💜 ⭐ 💗 ✨ 💜 ⭐ 💖 ✨';
+  position: fixed;
+  top: 10%;
+  left: 0;
+  width: 200%;
+  font-size: 1.5em;
+  letter-spacing: 100px;
+  opacity: 0.15;
+  animation: floatHearts 30s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes floatHearts {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 #root {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
-/* 滚动条样式 */
+/* 🎀 可爱公主风滚动条 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 14px;
+  height: 14px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: linear-gradient(180deg, #ffe4ec 0%, #e8d5f9 100%);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #ff9ec7 0%, #c9a0ff 50%, #ff9ec7 100%);
+  border-radius: 10px;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 0 10px rgba(255, 158, 199, 0.5),
+    0 0 20px rgba(201, 160, 255, 0.3),
+    inset 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: linear-gradient(135deg, #ff7eb3 0%, #b080ff 50%, #ff7eb3 100%);
+  box-shadow: 
+    0 0 15px rgba(255, 126, 179, 0.6),
+    0 0 30px rgba(176, 128, 255, 0.4),
+    inset 0 0 15px rgba(255, 255, 255, 0.4);
 }
 
-/* 选择文本颜色 */
+/* 选择文本颜色 - 公主粉 */
 ::selection {
-  background: #667eea;
+  background: linear-gradient(135deg, #ff9ec7 0%, #c9a0ff 100%);
   color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* ✨ 全局发光动画 */
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% { 
+    opacity: 0.9; 
+    transform: scale(1.02);
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 20px rgba(255, 158, 199, 0.5),
+      0 0 40px rgba(201, 160, 255, 0.3),
+      0 0 60px rgba(255, 158, 199, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 0 30px rgba(255, 158, 199, 0.7),
+      0 0 60px rgba(201, 160, 255, 0.5),
+      0 0 90px rgba(255, 158, 199, 0.3);
+  }
+}
+
+@keyframes rainbow-glow {
+  0% { box-shadow: 0 0 20px #ff9ec7, 0 0 40px #ff9ec7; }
+  25% { box-shadow: 0 0 20px #c9a0ff, 0 0 40px #c9a0ff; }
+  50% { box-shadow: 0 0 20px #a0d4ff, 0 0 40px #a0d4ff; }
+  75% { box-shadow: 0 0 20px #c9a0ff, 0 0 40px #c9a0ff; }
+  100% { box-shadow: 0 0 20px #ff9ec7, 0 0 40px #ff9ec7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }

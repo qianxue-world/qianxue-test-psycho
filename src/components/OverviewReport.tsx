@@ -1,23 +1,20 @@
 import { useState, useEffect } from 'react'
-import { parseDKTStats, runDKTAnalysis, DKTAnalysisResult } from '../utils/dktAnalysis'
+import { parseDKTStats, runDKTAnalysis, DKTAnalysisResult } from '../utils/dkt'
 import BasicMetricDetail, { BasicMetric } from './BasicMetricDetail'
+import { useI18n } from '../i18n'
 import './OverviewReport.css'
 
-// 基础指标详情数据
-const basicMetricsInfo: Record<string, Omit<BasicMetric, 'value'>> = {
+// 基础指标详情数据 - 将在组件内部使用 i18n 动态生成
+const getBasicMetricsInfo = (t: any): Record<string, Omit<BasicMetric, 'value'>> => ({
   brainVol: {
     id: 'brainVol',
-    name: '总脑容量',
+    name: t.overview.metrics.brainVol.name,
     unit: 'cm³',
     icon: '🧠',
-    description: '总脑容量（Total Brain Volume）是指整个大脑的体积，包括灰质、白质和脑脊液空间。这是评估大脑整体大小的基础指标，通常与颅内总容积（eTIV）进行标准化比较。',
-    normalRange: '成年男性 1100-1400 cm³，成年女性 1000-1300 cm³',
-    interpretation: '您的总脑容量在正常范围内。脑容量受遗传、年龄、性别等多种因素影响。研究表明，脑容量与认知能力存在一定相关性，但个体差异很大，不能单独作为智力评估依据。',
-    relatedFunctions: [
-      '整体认知能力：较大的脑容量通常与更高的认知储备相关',
-      '神经可塑性：脑容量反映了神经元和突触连接的总量',
-      '认知老化：随年龄增长，脑容量会逐渐减少，速率因人而异'
-    ],
+    description: t.overview.metrics.brainVol.description,
+    normalRange: t.overview.metrics.brainVol.normalRange,
+    interpretation: t.overview.metrics.brainVol.interpretation,
+    relatedFunctions: t.overview.metrics.brainVol.relatedFunctions,
     references: [
       'Pietschnig J, et al. (2015). Meta-analysis of associations between human brain volume and intelligence differences. Neuroscience & Biobehavioral Reviews.',
       'Rushton JP, Ankney CD. (2009). Whole brain size and general mental ability. International Journal of Neuroscience.'
@@ -25,18 +22,13 @@ const basicMetricsInfo: Record<string, Omit<BasicMetric, 'value'>> = {
   },
   cortexVol: {
     id: 'cortexVol',
-    name: '皮层灰质体积',
+    name: t.overview.metrics.cortexVol.name,
     unit: 'cm³',
     icon: '🔘',
-    description: '皮层灰质体积是指大脑皮层中神经元细胞体所占的体积。灰质是大脑信息处理的核心区域，包含大量神经元、树突和突触，负责感知、运动、记忆、情感等高级功能。',
-    normalRange: '成年人约 450-650 cm³',
-    interpretation: '皮层灰质是大脑执行复杂认知任务的关键结构。灰质体积与学习能力、记忆力和认知灵活性密切相关。通过持续学习和认知训练，可以促进灰质的维护和发展。',
-    relatedFunctions: [
-      '信息处理：灰质中的神经元负责接收、整合和传递信息',
-      '学习与记忆：海马体等灰质结构对记忆形成至关重要',
-      '执行功能：前额叶灰质与计划、决策、抑制控制相关',
-      '感知觉：感觉皮层灰质处理视觉、听觉、触觉等信息'
-    ],
+    description: t.overview.metrics.cortexVol.description,
+    normalRange: t.overview.metrics.cortexVol.normalRange,
+    interpretation: t.overview.metrics.cortexVol.interpretation,
+    relatedFunctions: t.overview.metrics.cortexVol.relatedFunctions,
     references: [
       'Kanai R, Rees G. (2011). The structural basis of inter-individual differences in human behaviour and cognition. Nature Reviews Neuroscience.',
       'Zatorre RJ, et al. (2012). Plasticity in gray and white: neuroimaging changes in brain structure during learning. Nature Neuroscience.'
@@ -44,18 +36,13 @@ const basicMetricsInfo: Record<string, Omit<BasicMetric, 'value'>> = {
   },
   whiteVol: {
     id: 'whiteVol',
-    name: '脑白质体积',
+    name: t.overview.metrics.whiteVol.name,
     unit: 'cm³',
     icon: '⚪',
-    description: '脑白质体积是指大脑中髓鞘化神经纤维（轴突）所占的体积。白质像大脑的"高速公路"，负责连接不同脑区，实现信息的快速传递。髓鞘的完整性直接影响神经信号传导速度。',
-    normalRange: '成年人约 400-550 cm³',
-    interpretation: '白质的完整性对认知功能至关重要。良好的白质结构支持快速的信息处理和脑区间的高效协调。有氧运动和健康的生活方式有助于维护白质健康。',
-    relatedFunctions: [
-      '信息传导：白质纤维连接不同脑区，实现信息快速传递',
-      '处理速度：髓鞘化程度影响神经信号传导速度',
-      '认知整合：白质束协调不同脑区的功能整合',
-      '运动协调：运动相关白质束支持精细运动控制'
-    ],
+    description: t.overview.metrics.whiteVol.description,
+    normalRange: t.overview.metrics.whiteVol.normalRange,
+    interpretation: t.overview.metrics.whiteVol.interpretation,
+    relatedFunctions: t.overview.metrics.whiteVol.relatedFunctions,
     references: [
       'Fields RD. (2008). White matter in learning, cognition and psychiatric disorders. Trends in Neurosciences.',
       'Johansen-Berg H. (2010). Behavioural relevance of variation in white matter microstructure. Current Opinion in Neurology.'
@@ -63,18 +50,13 @@ const basicMetricsInfo: Record<string, Omit<BasicMetric, 'value'>> = {
   },
   lhThickness: {
     id: 'lhThickness',
-    name: '左半球皮层厚度',
+    name: t.overview.metrics.lhThickness.name,
     unit: 'mm',
     icon: '📐',
-    description: '左半球皮层厚度是指左侧大脑皮层的平均厚度。皮层厚度反映了神经元的密度和组织结构，是评估大脑发育和老化的重要指标。左半球通常与语言、逻辑和分析能力相关。',
-    normalRange: '成年人约 2.3-2.8 mm',
-    interpretation: '皮层厚度是大脑健康的重要标志。适当的皮层厚度表明神经元组织良好。左半球皮层与语言处理、数学推理等功能密切相关。',
-    relatedFunctions: [
-      '语言功能：布洛卡区和韦尼克区位于左半球，负责语言产生和理解',
-      '逻辑推理：左半球参与分析性思维和逻辑推理',
-      '数学能力：数字处理和计算主要依赖左半球',
-      '精细运动：左半球控制右侧身体的精细运动'
-    ],
+    description: t.overview.metrics.lhThickness.description,
+    normalRange: t.overview.metrics.lhThickness.normalRange,
+    interpretation: t.overview.metrics.lhThickness.interpretation,
+    relatedFunctions: t.overview.metrics.lhThickness.relatedFunctions,
     references: [
       'Fischl B, Dale AM. (2000). Measuring the thickness of the human cerebral cortex from magnetic resonance images. PNAS.',
       'Shaw P, et al. (2006). Intellectual ability and cortical development in children and adolescents. Nature.'
@@ -82,31 +64,27 @@ const basicMetricsInfo: Record<string, Omit<BasicMetric, 'value'>> = {
   },
   rhThickness: {
     id: 'rhThickness',
-    name: '右半球皮层厚度',
+    name: t.overview.metrics.rhThickness.name,
     unit: 'mm',
     icon: '📐',
-    description: '右半球皮层厚度是指右侧大脑皮层的平均厚度。右半球通常与空间认知、面孔识别、情感处理和创造性思维相关。两侧半球的协调工作对完整的认知功能至关重要。',
-    normalRange: '成年人约 2.3-2.8 mm',
-    interpretation: '右半球皮层厚度反映了空间认知和情感处理相关区域的结构状态。右半球在艺术欣赏、音乐感知、社交认知等方面发挥重要作用。',
-    relatedFunctions: [
-      '空间认知：右半球负责空间定位、导航和视觉空间处理',
-      '面孔识别：梭状回面孔区主要位于右半球',
-      '情感处理：右半球在情绪识别和表达中起重要作用',
-      '整体加工：右半球倾向于整体性、直觉性的信息处理',
-      '音乐感知：音乐旋律和节奏的处理主要依赖右半球'
-    ],
+    description: t.overview.metrics.rhThickness.description,
+    normalRange: t.overview.metrics.rhThickness.normalRange,
+    interpretation: t.overview.metrics.rhThickness.interpretation,
+    relatedFunctions: t.overview.metrics.rhThickness.relatedFunctions,
     references: [
       'Toga AW, Thompson PM. (2003). Mapping brain asymmetry. Nature Reviews Neuroscience.',
       'Gazzaniga MS. (2000). Cerebral specialization and interhemispheric communication. Brain.'
     ]
   }
-}
+})
 
 export default function OverviewReport() {
+  const { t } = useI18n()
   const [analysis, setAnalysis] = useState<DKTAnalysisResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedBasicMetric, setSelectedBasicMetric] = useState<BasicMetric | null>(null)
+  const [subjectName, setSubjectName] = useState<string | null>(null)
   const [basicInfo, setBasicInfo] = useState<{
     eTIV: number
     brainVol: number
@@ -129,9 +107,15 @@ export default function OverviewReport() {
       const lhAparc = localStorage.getItem('freesurfer_lhAparc')
       const rhAparc = localStorage.getItem('freesurfer_rhAparc')
       const aseg = localStorage.getItem('freesurfer_aseg')
+      const storedSubjectName = localStorage.getItem('freesurfer_subjectName')
+
+      if (storedSubjectName) {
+        setSubjectName(storedSubjectName)
+      }
 
       if (!lhDKT || !rhDKT || !lhAparc || !rhAparc || !aseg) {
-        throw new Error('缺少必要的数据文件')
+        console.log(lhDKT, rhDKT, lhAparc, rhAparc, aseg)
+        throw new Error(t.overview.error)
       }
 
       // 解析基础信息
@@ -158,10 +142,11 @@ export default function OverviewReport() {
       // 运行 DKT 分析
       const lhData = parseDKTStats(lhDKT)
       const rhData = parseDKTStats(rhDKT)
-      const result = runDKTAnalysis(lhData, rhData)
+      const result = runDKTAnalysis(lhData, rhData, t)
       setAnalysis(result)
     } catch (err) {
-      setError('数据加载失败，请重新上传文件')
+      console.log(err)
+      setError(t.overview.error)
     }
     setLoading(false)
   }
@@ -170,7 +155,7 @@ export default function OverviewReport() {
     return (
       <div className="overview-loading">
         <div className="loading-spinner" />
-        <p>正在加载脑结构数据...</p>
+        <p>{t.overview.loading}</p>
       </div>
     )
   }
@@ -254,15 +239,16 @@ export default function OverviewReport() {
   }
 
   const getScoreLabel = (score: number) => {
-    if (score >= 85) return '优秀'
-    if (score >= 70) return '良好'
-    if (score >= 50) return '正常'
-    if (score >= 30) return '偏低'
-    return '需关注'
+    if (score >= 85) return t.scores.excellent
+    if (score >= 70) return t.scores.good
+    if (score >= 50) return t.scores.average
+    if (score >= 30) return t.scores.belowAverage
+    return t.scores.needsAttention
   }
 
   // 点击基础指标
   const handleBasicMetricClick = (metricId: string, value: number) => {
+    const basicMetricsInfo = getBasicMetricsInfo(t)
     const info = basicMetricsInfo[metricId]
     if (info) {
       setSelectedBasicMetric({ ...info, value })
@@ -278,8 +264,14 @@ export default function OverviewReport() {
     <div className="overview-report">
       {/* 页面标题 */}
       <header className="report-header">
-        <h1>🧠 脑结构分析报告</h1>
-        <p className="report-date">生成时间: {new Date().toLocaleString('zh-CN')}</p>
+        <h1>{t.overview.title}</h1>
+        {subjectName && (
+          <p className="report-subject">
+            <span className="subject-icon">👤</span>
+            {t.overview.subject}: <strong>{subjectName}</strong>
+          </p>
+        )}
+        <p className="report-date">{t.overview.generatedAt}: {new Date().toLocaleString()}</p>
       </header>
 
       {/* 综合评分卡片 */}
@@ -292,11 +284,11 @@ export default function OverviewReport() {
             <span className="score-label">{getScoreLabel(overallScore)}</span>
           </div>
           <div className="score-info">
-            <h2>综合评分</h2>
-            <p>基于 10 项 DKT 精细分区指标的综合评估，反映脑结构发育的整体水平。</p>
+            <h2>{t.overview.overallScore}</h2>
+            <p>{t.overview.overallScoreDesc}</p>
             {analysis && analysis.summary.topStrengths.length > 0 && (
               <div className="top-strengths">
-                <h3>💪 突出优势</h3>
+                <h3>{t.overview.topStrengths}</h3>
                 <div className="strength-tags">
                   {analysis.summary.topStrengths.map((s, i) => (
                     <span key={i} className="strength-tag">{s}</span>
@@ -311,8 +303,8 @@ export default function OverviewReport() {
       {/* 基础指标 - 可点击卡片 */}
       {basicInfo && (
         <section className="basic-section">
-          <h2>📏 基础脑容量指标</h2>
-          <p className="section-subtitle">点击卡片查看详细说明</p>
+          <h2>{t.overview.basicMetrics}</h2>
+          <p className="section-subtitle">{t.overview.basicMetricsSubtitle}</p>
           <div className="metrics-grid">
             <div 
               className="metric-card clickable"
@@ -321,7 +313,7 @@ export default function OverviewReport() {
               <div className="metric-icon">🧠</div>
               <div className="metric-info">
                 <span className="metric-value">{(basicInfo.brainVol / 1000).toFixed(0)} cm³</span>
-                <span className="metric-label">总脑容量</span>
+                <span className="metric-label">{t.overview.metrics.brainVol.name}</span>
               </div>
               <span className="metric-arrow">→</span>
             </div>
@@ -332,7 +324,7 @@ export default function OverviewReport() {
               <div className="metric-icon">🔘</div>
               <div className="metric-info">
                 <span className="metric-value">{(basicInfo.cortexVol / 1000).toFixed(0)} cm³</span>
-                <span className="metric-label">皮层灰质体积</span>
+                <span className="metric-label">{t.overview.metrics.cortexVol.name}</span>
               </div>
               <span className="metric-arrow">→</span>
             </div>
@@ -343,7 +335,7 @@ export default function OverviewReport() {
               <div className="metric-icon">⚪</div>
               <div className="metric-info">
                 <span className="metric-value">{(basicInfo.whiteVol / 1000).toFixed(0)} cm³</span>
-                <span className="metric-label">脑白质体积</span>
+                <span className="metric-label">{t.overview.metrics.whiteVol.name}</span>
               </div>
               <span className="metric-arrow">→</span>
             </div>
@@ -354,7 +346,7 @@ export default function OverviewReport() {
               <div className="metric-icon">📐</div>
               <div className="metric-info">
                 <span className="metric-value">{basicInfo.lhThickness.toFixed(2)} mm</span>
-                <span className="metric-label">左半球皮层厚度</span>
+                <span className="metric-label">{t.overview.metrics.lhThickness.name}</span>
               </div>
               <span className="metric-arrow">→</span>
             </div>
@@ -365,7 +357,7 @@ export default function OverviewReport() {
               <div className="metric-icon">📐</div>
               <div className="metric-info">
                 <span className="metric-value">{basicInfo.rhThickness.toFixed(2)} mm</span>
-                <span className="metric-label">右半球皮层厚度</span>
+                <span className="metric-label">{t.overview.metrics.rhThickness.name}</span>
               </div>
               <span className="metric-arrow">→</span>
             </div>
@@ -376,7 +368,7 @@ export default function OverviewReport() {
       {/* 特殊特征 */}
       {analysis && analysis.summary.specialFeatures.length > 0 && (
         <section className="special-section">
-          <h2>⭐ 特殊特征</h2>
+          <h2>{t.overview.specialFeatures}</h2>
           <div className="special-cards">
             {analysis.summary.specialFeatures.map((feature, idx) => (
               <div key={idx} className="special-card">
@@ -392,7 +384,7 @@ export default function OverviewReport() {
       {/* 个性化建议 */}
       {analysis && analysis.summary.recommendations.length > 0 && (
         <section className="suggestions-section">
-          <h2>💡 个性化建议</h2>
+          <h2>{t.overview.recommendations}</h2>
           <div className="suggestions-list">
             {analysis.summary.recommendations.map((rec, idx) => (
               <div key={idx} className="suggestion-item">
@@ -406,34 +398,34 @@ export default function OverviewReport() {
 
       {/* 通用健康建议 */}
       <section className="general-tips-section">
-        <h2>🌟 大脑健康小贴士</h2>
+        <h2>{t.overview.brainHealthTips}</h2>
         <div className="tips-grid">
           <div className="tip-card">
             <div className="tip-icon">🏃</div>
-            <h3>规律运动</h3>
-            <p>有氧运动可促进大脑血液循环，增加海马体体积，改善记忆力。</p>
+            <h3>{t.overview.exercise}</h3>
+            <p>{t.overview.exerciseDesc}</p>
           </div>
           <div className="tip-card">
             <div className="tip-icon">📖</div>
-            <h3>持续学习</h3>
-            <p>学习新知识和技能可促进神经连接形成，增加认知储备。</p>
+            <h3>{t.overview.learning}</h3>
+            <p>{t.overview.learningDesc}</p>
           </div>
           <div className="tip-card">
             <div className="tip-icon">😴</div>
-            <h3>优质睡眠</h3>
-            <p>充足睡眠有助于记忆巩固和大脑修复，建议每晚 7-9 小时。</p>
+            <h3>{t.overview.sleep}</h3>
+            <p>{t.overview.sleepDesc}</p>
           </div>
           <div className="tip-card">
             <div className="tip-icon">🧘</div>
-            <h3>压力管理</h3>
-            <p>通过冥想、运动等方式管理压力，保护大脑健康。</p>
+            <h3>{t.overview.stress}</h3>
+            <p>{t.overview.stressDesc}</p>
           </div>
         </div>
       </section>
 
       {/* 免责声明 */}
       <footer className="report-footer">
-        <p>⚠️ 本报告基于 FreeSurfer 8.0 重建数据和 DKT Atlas 分区，仅供科研和参考使用。脑结构与功能的关系存在个体差异，本报告不能作为医学诊断或能力评估的依据。如有健康疑虑，请咨询专业医生。</p>
+        <p>{t.overview.disclaimer}</p>
       </footer>
     </div>
   )

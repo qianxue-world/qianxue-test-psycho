@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
-import { runDKTAnalysis, parseDKTStats, DKTAnalysisResult, IndexResult } from '../utils/dktAnalysis'
+import { runDKTAnalysis, parseDKTStats, DKTAnalysisResult, IndexResult } from '../utils/dkt'
 import IndexDetail from './IndexDetail'
+import { useI18n } from '../i18n'
 import './SpecialReport.css'
+import handIcon from '../assets/hand.png'
 
 export default function SpecialReport() {
+  const { t } = useI18n()
   const [analysis, setAnalysis] = useState<DKTAnalysisResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState<IndexResult | null>(null)
+  const [subjectName, setSubjectName] = useState<string | null>(null)
 
   useEffect(() => {
     loadAndAnalyze()
@@ -20,17 +24,22 @@ export default function SpecialReport() {
       // 从 localStorage 读取数据
       const lhContent = localStorage.getItem('freesurfer_lhDKT')
       const rhContent = localStorage.getItem('freesurfer_rhDKT')
+      const storedSubjectName = localStorage.getItem('freesurfer_subjectName')
+
+      if (storedSubjectName) {
+        setSubjectName(storedSubjectName)
+      }
 
       if (!lhContent || !rhContent) {
-        throw new Error('缺少必要的数据文件')
+        throw new Error(t.common.error)
       }
 
       const lhData = parseDKTStats(lhContent)
       const rhData = parseDKTStats(rhContent)
-      const result = runDKTAnalysis(lhData, rhData)
+      const result = runDKTAnalysis(lhData, rhData, t)
       setAnalysis(result)
     } catch (err) {
-      setError('数据加载失败，请重新上传文件')
+      setError(t.common.error)
     }
     setLoading(false)
   }
@@ -45,13 +54,13 @@ export default function SpecialReport() {
   }
 
   const getPercentileLabel = (p: number) => {
-    if (p >= 98) return '卓越'
-    if (p >= 93) return '优秀'
-    if (p >= 84) return '良好'
-    if (p >= 70) return '较好'
-    if (p >= 30) return '正常'
-    if (p >= 16) return '偏低'
-    return '需关注'
+    if (p >= 98) return t.scores.excellent
+    if (p >= 93) return t.scores.good
+    if (p >= 84) return t.scores.aboveAverage
+    if (p >= 70) return t.scores.aboveAverage
+    if (p >= 30) return t.scores.average
+    if (p >= 16) return t.scores.belowAverage
+    return t.scores.needsAttention
   }
 
   // 侧化指标：将 z-score 转换为左右偏向百分比 (50% = 平衡)
@@ -111,86 +120,86 @@ export default function SpecialReport() {
   // 侧化指标的标签
   const getLateralizationLabel = (value: number, type: 'hand' | 'eye' | 'lang' | 'nostril'): string => {
     if (type === 'hand') {
-      if (value >= 1.28) return '极纯右利手'
-      if (value >= 0.84) return '强右利手'
-      if (value >= 0.52) return '中等右利手'
-      if (value >= -0.52) return '双手协调'
-      if (value >= -0.84) return '中等左利手'
-      return '强左利手'
+      if (value >= 1.28) return t.lateralization.extreme + ' ' + t.lateralization.rightHand
+      if (value >= 0.84) return t.lateralization.strong + ' ' + t.lateralization.rightHand
+      if (value >= 0.52) return t.lateralization.rightHand
+      if (value >= -0.52) return t.lateralization.ambidextrous
+      if (value >= -0.84) return t.lateralization.leftHand
+      return t.lateralization.strong + ' ' + t.lateralization.leftHand
     } else if (type === 'eye') {
-      if (value >= 1.5) return '极强右眼'
-      if (value >= 0.8) return '明显右眼'
-      if (value >= 0.3) return '轻度右眼'
-      if (value >= -0.3) return '双眼均衡'
-      if (value >= -0.8) return '轻度左眼'
-      return '明显左眼'
+      if (value >= 1.5) return t.lateralization.extreme + ' ' + t.lateralization.rightEye
+      if (value >= 0.8) return t.lateralization.strong + ' ' + t.lateralization.rightEye
+      if (value >= 0.3) return t.lateralization.rightEye
+      if (value >= -0.3) return t.lateralization.balanced
+      if (value >= -0.8) return t.lateralization.leftEye
+      return t.lateralization.strong + ' ' + t.lateralization.leftEye
     } else if (type === 'nostril') {
-      if (value >= 1.2) return '极强右鼻孔'
-      if (value >= 0.7) return '明显右鼻孔'
-      if (value >= 0.3) return '轻度右鼻孔'
-      if (value >= -0.3) return '双鼻孔均衡'
-      if (value >= -0.7) return '轻度左鼻孔'
-      if (value >= -1.2) return '明显左鼻孔'
-      return '极强左鼻孔'
+      if (value >= 1.2) return t.lateralization.extreme + ' ' + t.lateralization.rightNostril
+      if (value >= 0.7) return t.lateralization.strong + ' ' + t.lateralization.rightNostril
+      if (value >= 0.3) return t.lateralization.rightNostril
+      if (value >= -0.3) return t.lateralization.balanced
+      if (value >= -0.7) return t.lateralization.leftNostril
+      if (value >= -1.2) return t.lateralization.strong + ' ' + t.lateralization.leftNostril
+      return t.lateralization.extreme + ' ' + t.lateralization.leftNostril
     } else {
-      // 语言偏侧化
-      if (value >= 0.20) return '典型左侧化'
-      if (value >= 0.05) return '弱左侧化'
-      if (value >= -0.05) return '双侧化'
-      if (value >= -0.15) return '弱右侧化'
-      return '显著右侧化'
+      // 语言偏侧化 - 使用描述性标签而非评价性标签
+      if (value >= 0.20) return t.lateralization.typical + ' ' + t.lateralization.leftBrain  // 典型左侧化（85%人群）
+      if (value >= 0.05) return t.lateralization.weak + ' ' + t.lateralization.leftBrain     // 弱左侧化
+      if (value >= -0.05) return t.lateralization.bilateral                                   // 双侧化（3%人群）
+      if (value >= -0.15) return t.lateralization.weak + ' ' + t.lateralization.rightBrain   // 弱右侧化
+      return t.lateralization.atypical + ' ' + t.lateralization.rightBrain                   // 非典型右侧化（<0.5%）
     }
   }
 
   // 高级功能偏侧化指标的标签
   const getAdvancedLateralizationLabel = (value: number, type: 'spatial' | 'emotion' | 'face' | 'music' | 'tom' | 'logic' | 'math'): string => {
     if (type === 'spatial') {
-      if (value >= 0.80) return '极强右偏'
-      if (value >= 0.40) return '明显右偏'
-      if (value >= -0.20) return '均衡'
-      if (value >= -0.40) return '轻度左偏'
-      return '明显左偏'
+      if (value >= 0.80) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.40) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.20) return t.lateralization.balanced
+      if (value >= -0.40) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (type === 'emotion') {
-      if (value >= 0.90) return '极强右偏'
-      if (value >= 0.50) return '明显右偏'
-      if (value >= -0.30) return '均衡'
-      if (value >= -0.50) return '轻度左偏'
-      return '左偏(抑郁倾向)'
+      if (value >= 0.90) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.50) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.30) return t.lateralization.balanced
+      if (value >= -0.50) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (type === 'face') {
-      if (value >= 1.00) return '极强右偏'
-      if (value >= 0.60) return '明显右偏'
-      if (value >= -0.20) return '均衡'
-      if (value >= -0.60) return '轻度左偏'
-      return '罕见左偏'
+      if (value >= 1.00) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.60) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.20) return t.lateralization.balanced
+      if (value >= -0.60) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (type === 'music') {
-      if (value >= 1.20) return '极强右偏'
-      if (value >= 0.70) return '明显右偏'
-      if (value >= -0.30) return '均衡'
-      if (value >= -0.70) return '轻度左偏'
-      return '罕见左偏'
+      if (value >= 1.20) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.70) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.30) return t.lateralization.balanced
+      if (value >= -0.70) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     } else if (type === 'logic') {
       // 逻辑推理（负值=左脑优势）
-      if (value <= -0.80) return '极强左脑'
-      if (value <= -0.50) return '显著左脑'
-      if (value <= -0.20) return '轻度左脑'
-      if (value <= 0.20) return '均衡'
-      if (value <= 0.50) return '右脑优势'
-      return '显著右脑'
+      if (value <= -0.80) return t.lateralization.extreme + ' ' + t.lateralization.leftBrain
+      if (value <= -0.50) return t.lateralization.strong + ' ' + t.lateralization.leftBrain
+      if (value <= -0.20) return t.lateralization.leftBrain
+      if (value <= 0.20) return t.lateralization.balanced
+      if (value <= 0.50) return t.lateralization.rightBrain
+      return t.lateralization.strong + ' ' + t.lateralization.rightBrain
     } else if (type === 'math') {
       // 数学能力（负值=左脑优势）
-      if (value <= -0.90) return '极强左脑'
-      if (value <= -0.60) return '显著左脑'
-      if (value <= -0.20) return '轻度左脑'
-      if (value <= 0.20) return '均衡'
-      if (value <= 0.40) return '右脑优势'
-      return '显著右脑'
+      if (value <= -0.90) return t.lateralization.extreme + ' ' + t.lateralization.leftBrain
+      if (value <= -0.60) return t.lateralization.strong + ' ' + t.lateralization.leftBrain
+      if (value <= -0.20) return t.lateralization.leftBrain
+      if (value <= 0.20) return t.lateralization.balanced
+      if (value <= 0.40) return t.lateralization.rightBrain
+      return t.lateralization.strong + ' ' + t.lateralization.rightBrain
     } else {
       // 心理理论
-      if (value >= 0.80) return '极强右偏'
-      if (value >= 0.40) return '明显右偏'
-      if (value >= -0.20) return '均衡'
-      if (value >= -0.40) return '轻度左偏'
-      return '明显左偏'
+      if (value >= 0.80) return t.lateralization.extreme + ' ' + t.lateralization.rightBrain
+      if (value >= 0.40) return t.lateralization.strong + ' ' + t.lateralization.rightBrain
+      if (value >= -0.20) return t.lateralization.balanced
+      if (value >= -0.40) return t.lateralization.leftBrain
+      return t.lateralization.strong + ' ' + t.lateralization.leftBrain
     }
   }
 
@@ -212,7 +221,7 @@ export default function SpecialReport() {
     return (
       <div className="special-loading">
         <div className="loading-spinner" />
-        <p>正在分析 DKT 数据...</p>
+        <p>{t.dkt.analyzing}</p>
       </div>
     )
   }
@@ -238,7 +247,7 @@ export default function SpecialReport() {
         onClick={() => setSelectedIndex(index)}
       >
         <div className="card-header">
-          <span className="card-name">{index.nameCN}</span>
+          <span className="card-name">{t.dkt.indexNames[index.name as keyof typeof t.dkt.indexNames]}</span>
           <span 
             className="card-badge"
             style={{ background: color }}
@@ -249,7 +258,7 @@ export default function SpecialReport() {
         <div className="card-body">
           <div className="card-score">
             <span className="score-num">{index.value}</span>
-            <span className="score-label">偏侧指数</span>
+            <span className="score-label">{t.dkt.lateralizationIndex}</span>
           </div>
         </div>
         <div className="lateralization-bar">
@@ -264,44 +273,44 @@ export default function SpecialReport() {
         <div className="lateralization-labels">
           {type === 'spatial' ? (
             <>
-              <span>左侧空间</span>
-              <span>均衡</span>
-              <span>右侧空间</span>
+              <span>{t.dkt.lateralizationLabels.leftSpatial}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.dkt.lateralizationLabels.rightSpatial}</span>
             </>
           ) : type === 'emotion' ? (
             <>
-              <span>正性情绪</span>
-              <span>均衡</span>
-              <span>负性情绪</span>
+              <span>{t.dkt.lateralizationLabels.positiveEmotion}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.dkt.lateralizationLabels.negativeEmotion}</span>
             </>
           ) : type === 'face' ? (
             <>
-              <span>分析型</span>
-              <span>均衡</span>
-              <span>整体型</span>
+              <span>{t.dkt.lateralizationLabels.analytical}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.dkt.lateralizationLabels.holistic}</span>
             </>
           ) : type === 'music' ? (
             <>
-              <span>节奏型</span>
-              <span>均衡</span>
-              <span>旋律型</span>
+              <span>{t.dkt.lateralizationLabels.rhythm}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.dkt.lateralizationLabels.melody}</span>
             </>
           ) : type === 'tom' ? (
             <>
-              <span>语言推理</span>
-              <span>均衡</span>
-              <span>直觉感知</span>
+              <span>{t.dkt.lateralizationLabels.verbalReasoning}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.dkt.lateralizationLabels.intuitivePerception}</span>
             </>
           ) : (
             <>
-              <span>左脑</span>
-              <span>均衡</span>
-              <span>右脑</span>
+              <span>{t.lateralization.leftBrain}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.lateralization.rightBrain}</span>
             </>
           )}
         </div>
         <div className="card-footer">
-          <span className="card-hint">点击查看详情</span>
+          <span className="card-hint">{t.common.clickForDetails}</span>
           <span className="card-arrow">→</span>
         </div>
       </div>
@@ -315,6 +324,18 @@ export default function SpecialReport() {
     const label = getLateralizationLabel(index.value, type)
     const color = getLateralizationColor(percent)
     
+    // 获取对应的 icon
+    const getIcon = () => {
+      switch (type) {
+        case 'hand':
+          return handIcon
+        default:
+          return null
+      }
+    }
+    
+    const icon = getIcon()
+    
     return (
       <div 
         key={idx} 
@@ -322,7 +343,8 @@ export default function SpecialReport() {
         onClick={() => setSelectedIndex(index)}
       >
         <div className="card-header">
-          <span className="card-name">{index.nameCN}</span>
+          {icon && <img src={icon} alt="" className="card-icon" />}
+          <span className="card-name">{t.dkt.indexNames[index.name as keyof typeof t.dkt.indexNames]}</span>
           <span 
             className="card-badge"
             style={{ background: color }}
@@ -333,7 +355,7 @@ export default function SpecialReport() {
         <div className="card-body">
           <div className="card-score">
             <span className="score-num">{index.value}</span>
-            <span className="score-label">偏侧指数</span>
+            <span className="score-label">{t.dkt.lateralizationIndex}</span>
           </div>
         </div>
         <div className="lateralization-bar">
@@ -348,38 +370,38 @@ export default function SpecialReport() {
         <div className="lateralization-labels">
           {type === 'hand' ? (
             <>
-              <span>左手</span>
-              <span>双手</span>
-              <span>右手</span>
+              <span>{t.lateralization.leftHand}</span>
+              <span>{t.lateralization.ambidextrous}</span>
+              <span>{t.lateralization.rightHand}</span>
             </>
           ) : type === 'eye' ? (
             <>
-              <span>左眼</span>
-              <span>均衡</span>
-              <span>右眼</span>
+              <span>{t.lateralization.leftEye}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.lateralization.rightEye}</span>
             </>
           ) : type === 'nostril' ? (
             <>
-              <span>左鼻</span>
-              <span>均衡</span>
-              <span>右鼻</span>
+              <span>{t.lateralization.leftNostril}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.lateralization.rightNostril}</span>
             </>
           ) : type === 'lang' ? (
             <>
-              <span>左脑</span>
-              <span>双侧</span>
-              <span>右脑</span>
+              <span>{t.lateralization.leftBrain}</span>
+              <span>{t.lateralization.bilateral}</span>
+              <span>{t.lateralization.rightBrain}</span>
             </>
           ) : (
             <>
-              <span>L侧</span>
-              <span>均衡</span>
-              <span>R侧</span>
+              <span>{t.dkt.lateralizationLabels.leftSide}</span>
+              <span>{t.lateralization.balanced}</span>
+              <span>{t.dkt.lateralizationLabels.rightSide}</span>
             </>
           )}
         </div>
         <div className="card-footer">
-          <span className="card-hint">点击查看详情</span>
+          <span className="card-hint">{t.common.clickForDetails}</span>
           <span className="card-arrow">→</span>
         </div>
       </div>
@@ -394,7 +416,7 @@ export default function SpecialReport() {
       onClick={() => setSelectedIndex(index)}
     >
       <div className="card-header">
-        <span className="card-name">{index.nameCN}</span>
+        <span className="card-name">{t.dkt.indexNames[index.name as keyof typeof t.dkt.indexNames]}</span>
         <span 
           className="card-badge"
           style={{ background: getPercentileColor(index.percentile) }}
@@ -405,10 +427,10 @@ export default function SpecialReport() {
       <div className="card-body">
         <div className="card-score">
           <span className="score-num">{index.value}</span>
-          <span className="score-label">z-score</span>
+          <span className="score-label">{t.dkt.zScore}</span>
         </div>
         <div className="card-percentile">
-          前<strong>{100 - index.percentile}%</strong>
+          {t.dkt.top}<strong>{100 - index.percentile}%</strong>
         </div>
       </div>
       <div className="card-bar">
@@ -421,7 +443,7 @@ export default function SpecialReport() {
         />
       </div>
       <div className="card-footer">
-        <span className="card-hint">点击查看详情</span>
+        <span className="card-hint">{t.common.clickForDetails}</span>
         <span className="card-arrow">→</span>
       </div>
     </div>
@@ -430,8 +452,14 @@ export default function SpecialReport() {
   return (
     <div className="special-report">
       <header className="special-header">
-        <h1>🔬 DKT 精细分区专业分析</h1>
-        <p>基于 Desikan-Killiany-Tourville 图谱 | 点击卡片查看详情</p>
+        <h1>{t.dkt.title}</h1>
+        {subjectName && (
+          <p className="report-subject">
+            <span className="subject-icon">👤</span>
+            {t.common.subject}: <strong>{subjectName}</strong>
+          </p>
+        )}
+        <p>{t.dkt.subtitle}</p>
       </header>
 
       {analysis && (
@@ -442,7 +470,7 @@ export default function SpecialReport() {
               <div className="summary-cards">
                 {analysis.summary.topStrengths.length > 0 && (
                   <div className="summary-card strengths">
-                    <h3>💪 突出优势</h3>
+                    <h3>{t.report.topStrengths}</h3>
                     <ul>
                       {analysis.summary.topStrengths.map((s, i) => (
                         <li key={i}>{s}</li>
@@ -452,7 +480,7 @@ export default function SpecialReport() {
                 )}
                 {analysis.summary.specialFeatures.length > 0 && (
                   <div className="summary-card features">
-                    <h3>⭐ 特殊特征</h3>
+                    <h3>{t.report.specialFeatures}</h3>
                     <ul>
                       {analysis.summary.specialFeatures.map((f, i) => (
                         <li key={i}>{f}</li>
@@ -462,7 +490,7 @@ export default function SpecialReport() {
                 )}
                 {analysis.summary.recommendations.length > 0 && (
                   <div className="summary-card recommendations">
-                    <h3>💡 个性化建议</h3>
+                    <h3>{t.report.recommendations}</h3>
                     <ul>
                       {analysis.summary.recommendations.map((r, i) => (
                         <li key={i}>{r}</li>
@@ -476,8 +504,8 @@ export default function SpecialReport() {
 
           {/* 基础侧化指标: 惯用手(0), 主视眼(1), 主嗅鼻孔(2), 语言偏侧化(3) */}
           <section className="indices-section">
-            <h2>🧠 基础侧化指标</h2>
-            <p className="section-hint">蓝色 = 左侧优势 | 紫色 = 平衡 | 粉色 = 右侧优势</p>
+            <h2>{t.dkt.basicLateralization}</h2>
+            <p className="section-hint">{t.dkt.basicLateralizationHint}</p>
             <div className="indices-grid">
               {renderLateralizationCard(analysis.indices[0], 0, 'hand')}
               {renderLateralizationCard(analysis.indices[1], 1, 'eye')}
@@ -488,8 +516,8 @@ export default function SpecialReport() {
 
           {/* 高级功能偏侧化指标: 空间注意(4), 情绪加工(5), 面孔识别(6), 音乐感知(7), 心理理论(8), 逻辑推理(9), 数学能力(10) */}
           <section className="indices-section">
-            <h2>🎭 高级功能偏侧化指标</h2>
-            <p className="section-hint">基于 ENIGMA + UKBB + HCP 2024-2025 顶刊级参数 (n&gt;120,000+)</p>
+            <h2>{t.dkt.advancedLateralization}</h2>
+            <p className="section-hint">{t.dkt.advancedLateralizationHint}</p>
             <div className="indices-grid">
               {renderAdvancedLateralizationCard(analysis.indices[4], 4, 'spatial')}
               {renderAdvancedLateralizationCard(analysis.indices[5], 5, 'emotion')}
@@ -503,7 +531,7 @@ export default function SpecialReport() {
 
           {/* 感知指标: 嗅觉(11) */}
           <section className="indices-section">
-            <h2>👃 感知功能指标</h2>
+            <h2>{t.dkt.sensoryFunction}</h2>
             <div className="indices-grid">
               {renderIndexCard(analysis.indices[11], 11)}
             </div>
@@ -511,7 +539,7 @@ export default function SpecialReport() {
 
           {/* 语言指标: 语言综合(12), 阅读流畅(13), 阅读障碍风险(14) */}
           <section className="indices-section">
-            <h2>📚 语言与阅读指标</h2>
+            <h2>{t.dkt.languageReading}</h2>
             <div className="indices-grid">
               {renderIndexCard(analysis.indices[12], 12)}
               {renderIndexCard(analysis.indices[13], 13)}
@@ -521,7 +549,7 @@ export default function SpecialReport() {
 
           {/* 认知指标: 共情(15), 执行功能(16), 空间加工(17), 流体智力(18) */}
           <section className="indices-section">
-            <h2>🎯 认知能力指标</h2>
+            <h2>{t.dkt.cognitiveAbility}</h2>
             <div className="indices-grid">
               {analysis.indices.slice(15).map((index, idx) => renderIndexCard(index, idx + 15))}
             </div>
@@ -529,12 +557,12 @@ export default function SpecialReport() {
 
           {/* 方法说明 */}
           <section className="method-section">
-            <h2>📖 方法学说明</h2>
+            <h2>{t.dkt.methodology}</h2>
             <div className="method-content">
-              <p><strong>数据来源:</strong> FreeSurfer 8.0 DKT Atlas</p>
-              <p><strong>参考人群:</strong> 成年男性 (ENIGMA, UKBB, HCP 2022-2025, n&gt;120,000)</p>
-              <p><strong>计算方法:</strong> 基于厚度、表面积、体积的加权 z-score</p>
-              <p><strong>高级偏侧化指标:</strong> 基于 2024-2025 国际顶刊级 meta-analysis 参数</p>
+              <p><strong>{t.report.dataSource}:</strong> {t.dkt.methodologyContent.dataSource}</p>
+              <p><strong>{t.report.referencePopulation}:</strong> {t.dkt.methodologyContent.referencePopulation}</p>
+              <p><strong>{t.report.calculationMethod}:</strong> {t.dkt.methodologyContent.calculationMethod}</p>
+              <p><strong>{t.report.advancedLateralization}:</strong> {t.dkt.methodologyContent.advancedLateralization}</p>
             </div>
           </section>
         </>

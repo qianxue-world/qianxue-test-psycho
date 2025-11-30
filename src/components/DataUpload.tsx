@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useI18n } from '../i18n'
 import './DataUpload.css'
 
 interface Props {
@@ -21,17 +22,17 @@ interface UploadedFiles {
 }
 
 // 文件类型配置
-const fileTypes = [
-  { key: 'lhDKT', label: '左半球 DKT', pattern: /lh\.aparc\.DKTatlas\.stats$/i, hint: 'lh.aparc.DKTatlas.stats', required: true },
-  { key: 'rhDKT', label: '右半球 DKT', pattern: /rh\.aparc\.DKTatlas\.stats$/i, hint: 'rh.aparc.DKTatlas.stats', required: true },
-  { key: 'lhAparc', label: '左半球 Aparc', pattern: /lh\.aparc\.stats$/i, hint: 'lh.aparc.stats', required: true },
-  { key: 'rhAparc', label: '右半球 Aparc', pattern: /rh\.aparc\.stats$/i, hint: 'rh.aparc.stats', required: true },
-  { key: 'aseg', label: '皮下结构', pattern: /aseg\.stats$/i, hint: 'aseg.stats', required: true },
+const fileTypesConfig = [
+  { key: 'lhDKT', pattern: /lh\.aparc\.DKTatlas\.stats$/i, hint: 'lh.aparc.DKTatlas.stats', required: true },
+  { key: 'rhDKT', pattern: /rh\.aparc\.DKTatlas\.stats$/i, hint: 'rh.aparc.DKTatlas.stats', required: true },
+  { key: 'lhAparc', pattern: /lh\.aparc\.stats$/i, hint: 'lh.aparc.stats', required: true },
+  { key: 'rhAparc', pattern: /rh\.aparc\.stats$/i, hint: 'rh.aparc.stats', required: true },
+  { key: 'aseg', pattern: /aseg\.stats$/i, hint: 'aseg.stats', required: true },
 ] as const
 
 // 根据文件名自动识别文件类型
 function detectFileType(fileName: string): keyof UploadedFiles | null {
-  for (const ft of fileTypes) {
+  for (const ft of fileTypesConfig) {
     if (ft.pattern.test(fileName)) {
       return ft.key as keyof UploadedFiles
     }
@@ -39,38 +40,50 @@ function detectFileType(fileName: string): keyof UploadedFiles | null {
   return null
 }
 
-// 验证文件名是否匹配期望的类型
-function validateFileName(fileName: string, expectedType: keyof UploadedFiles): { isValid: boolean; error?: string } {
-  const expectedConfig = fileTypes.find(f => f.key === expectedType)
-  if (!expectedConfig) return { isValid: false, error: '未知文件类型' }
-  
-  // 检查是否匹配期望的模式
-  if (expectedConfig.pattern.test(fileName)) {
-    return { isValid: true }
-  }
-  
-  // 检查是否是其他类型的文件（用户可能拖错了）
-  const detectedType = detectFileType(fileName)
-  if (detectedType) {
-    const detectedConfig = fileTypes.find(f => f.key === detectedType)
-    return { 
-      isValid: false, 
-      error: `这是 ${detectedConfig?.label} 文件，不是 ${expectedConfig.label}` 
+// 从文件内容中提取 subjectname
+function extractSubjectName(content: string): string | null {
+  const match = content.match(/^#\s*subjectname\s+(.+)$/m)
+  return match ? match[1].trim() : null
+}
+
+// 解析 GitHub URL
+function parseGitHubUrl(url: string): { owner: string; repo: string; branch: string; path: string } | null {
+  // 支持格式:
+  // https://github.com/owner/repo/blob/branch/path/to/folder
+  // https://github.com/owner/repo/tree/branch/path/to/folder
+  // https://github.com/owner/repo/blob/branch/path/to/file.stats (自动提取上级目录)
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/(blob|tree)\/([^/]+)\/(.+)/)
+  if (match) {
+    let path = match[5].replace(/\/$/, '') // 移除末尾斜杠
+    
+    // 如果路径以 .stats 结尾，说明用户提供的是文件 URL，自动提取上级目录
+    if (path.endsWith('.stats')) {
+      const lastSlash = path.lastIndexOf('/')
+      if (lastSlash > 0) {
+        path = path.substring(0, lastSlash)
+      }
+    }
+    
+    return {
+      owner: match[1],
+      repo: match[2],
+      branch: match[4],
+      path
     }
   }
-  
-  // 检查常见错误：lh/rh 混淆
-  if (expectedType.startsWith('lh') && fileName.includes('rh.')) {
-    return { isValid: false, error: '这是右半球(rh)文件，需要左半球(lh)文件' }
-  }
-  if (expectedType.startsWith('rh') && fileName.includes('lh.')) {
-    return { isValid: false, error: '这是左半球(lh)文件，需要右半球(rh)文件' }
-  }
-  
-  return { isValid: false, error: `文件名不匹配，期望: ${expectedConfig.hint}` }
+  return null
+}
+
+// GitHub API 响应类型
+interface GitHubFile {
+  name: string
+  path: string
+  type: 'file' | 'dir'
+  download_url: string | null
 }
 
 export default function DataUpload({ onDataUploaded, onCancel }: Props) {
+  const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFiles>({
     lhDKT: { isValid: false },
@@ -80,6 +93,50 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
     aseg: { isValid: false },
   })
   const [isDraggingFolder, setIsDraggingFolder] = useState(false)
+  const [githubUrl, setGithubUrl] = useState('')
+  const [isLoadingGithub, setIsLoadingGithub] = useState(false)
+  const [subjectNames, setSubjectNames] = useState<Record<string, string>>({})
+  const [subjectNameWarning, setSubjectNameWarning] = useState<string | null>(null)
+  
+  // 文件类型配置（使用 t 函数）
+  const fileTypes = [
+    { key: 'lhDKT', label: t.upload.fileLabels.lhDKT, pattern: /lh\.aparc\.DKTatlas\.stats$/i, hint: 'lh.aparc.DKTatlas.stats', required: true },
+    { key: 'rhDKT', label: t.upload.fileLabels.rhDKT, pattern: /rh\.aparc\.DKTatlas\.stats$/i, hint: 'rh.aparc.DKTatlas.stats', required: true },
+    { key: 'lhAparc', label: t.upload.fileLabels.lhAparc, pattern: /lh\.aparc\.stats$/i, hint: 'lh.aparc.stats', required: true },
+    { key: 'rhAparc', label: t.upload.fileLabels.rhAparc, pattern: /rh\.aparc\.stats$/i, hint: 'rh.aparc.stats', required: true },
+    { key: 'aseg', label: t.upload.fileLabels.aseg, pattern: /aseg\.stats$/i, hint: 'aseg.stats', required: true },
+  ] as const
+  
+  // 验证文件名是否匹配期望的类型
+  const validateFileName = useCallback((fileName: string, expectedType: keyof UploadedFiles): { isValid: boolean; error?: string } => {
+    const expectedConfig = fileTypes.find(f => f.key === expectedType)
+    if (!expectedConfig) return { isValid: false, error: t.upload.errors.unknownFileType }
+    
+    // 检查是否匹配期望的模式
+    if (expectedConfig.pattern.test(fileName)) {
+      return { isValid: true }
+    }
+    
+    // 检查是否是其他类型的文件（用户可能拖错了）
+    const detectedType = detectFileType(fileName)
+    if (detectedType) {
+      const detectedConfig = fileTypes.find(f => f.key === detectedType)
+      return { 
+        isValid: false, 
+        error: t.upload.errors.wrongFileType.replace('{detected}', detectedConfig?.label || '').replace('{expected}', expectedConfig.label)
+      }
+    }
+    
+    // 检查常见错误：lh/rh 混淆
+    if (expectedType.startsWith('lh') && fileName.includes('rh.')) {
+      return { isValid: false, error: t.upload.errors.needsLeftHemisphere }
+    }
+    if (expectedType.startsWith('rh') && fileName.includes('lh.')) {
+      return { isValid: false, error: t.upload.errors.needsRightHemisphere }
+    }
+    
+    return { isValid: false, error: t.upload.errors.fileNameMismatch.replace('{expected}', expectedConfig.hint) }
+  }, [t, fileTypes])
 
   const handleFileUpload = useCallback(async (file: File, type: keyof UploadedFiles) => {
     try {
@@ -101,9 +158,27 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
       if (!text.includes('# Measure')) {
         setUploadedFiles(prev => ({
           ...prev,
-          [type]: { fileName: file.name, isValid: false, error: '文件格式不正确' }
+          [type]: { fileName: file.name, isValid: false, error: t.upload.errors.invalidFormat }
         }))
         return
+      }
+
+      // 提取 subjectname
+      const subjectName = extractSubjectName(text)
+      if (subjectName) {
+        setSubjectNames(prev => {
+          const newNames = { ...prev, [type]: subjectName }
+          // 检查所有已上传文件的 subjectname 是否一致
+          const uniqueNames = [...new Set(Object.values(newNames))]
+          if (uniqueNames.length > 1) {
+            setSubjectNameWarning(`${t.upload.warningDifferentSubjects}: ${uniqueNames.join(', ')}`)
+          } else {
+            setSubjectNameWarning(null)
+          }
+          // 保存主 subjectname 到 localStorage
+          localStorage.setItem('freesurfer_subjectName', subjectName)
+          return newNames
+        })
       }
 
       // 保存到 localStorage
@@ -113,9 +188,10 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
         [type]: { fileName: file.name, isValid: true }
       }))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '文件上传失败')
+      console.log(err)
+      setError(err instanceof Error ? err.message : t.upload.errors.uploadFailed)
     }
-  }, [])
+  }, [t, validateFileName])
 
   // 处理文件夹拖拽 - 递归读取所有文件
   const processEntry = useCallback(async (entry: FileSystemEntry): Promise<File[]> => {
@@ -161,11 +237,117 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
     }
     
     if (matchedCount === 0 && files.length > 0) {
-      setError('未找到匹配的 FreeSurfer stats 文件')
+      setError(t.upload.errors.noMatchingFiles)
     } else if (matchedCount > 0) {
       setError(null)
     }
-  }, [handleFileUpload])
+  }, [t, handleFileUpload])
+
+  // 从 GitHub 导入文件
+  const handleGitHubImport = useCallback(async () => {
+    if (!githubUrl.trim()) {
+      setError(t.upload.errors.enterGitHubUrl)
+      return
+    }
+
+    const parsed = parseGitHubUrl(githubUrl.trim())
+    if (!parsed) {
+      setError(t.upload.errors.invalidGitHubUrl)
+      return
+    }
+
+    setIsLoadingGithub(true)
+    setError(null)
+
+    try {
+      // 获取文件夹内容
+      const apiUrl = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${parsed.path}?ref=${parsed.branch}`
+      const response = await fetch(apiUrl)
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(t.upload.errors.pathNotFound)
+        } else if (response.status === 403) {
+          throw new Error(t.upload.errors.apiRateLimit)
+        }
+        throw new Error(`${t.upload.errors.apiError}: ${response.status}`)
+      }
+
+      const files: GitHubFile[] = await response.json()
+      
+      if (!Array.isArray(files)) {
+        throw new Error(t.upload.errors.notAFolder)
+      }
+
+      // 筛选出 stats 文件
+      const statsFiles = files.filter(f => f.type === 'file' && f.name.endsWith('.stats'))
+      
+      if (statsFiles.length === 0) {
+        throw new Error(t.upload.errors.noStatsFiles)
+      }
+
+      let matchedCount = 0
+
+      // 下载并处理每个匹配的文件
+      for (const file of statsFiles) {
+        const detectedType = detectFileType(file.name)
+        if (detectedType && file.download_url) {
+          try {
+            const fileResponse = await fetch(file.download_url)
+            const text = await fileResponse.text()
+            
+            // 验证文件内容格式
+            if (!text.includes('# Measure')) {
+              setUploadedFiles(prev => ({
+                ...prev,
+                [detectedType]: { fileName: file.name, isValid: false, error: t.upload.errors.invalidFormat }
+              }))
+              continue
+            }
+
+            // 提取 subjectname
+            const subjectName = extractSubjectName(text)
+            if (subjectName) {
+              setSubjectNames(prev => {
+                const newNames = { ...prev, [detectedType]: subjectName }
+                const uniqueNames = [...new Set(Object.values(newNames))]
+                if (uniqueNames.length > 1) {
+                  setSubjectNameWarning(`${t.upload.warningDifferentSubjects}: ${uniqueNames.join(', ')}`)
+                } else {
+                  setSubjectNameWarning(null)
+                }
+                localStorage.setItem('freesurfer_subjectName', subjectName)
+                return newNames
+              })
+            }
+
+            // 保存到 localStorage
+            localStorage.setItem(`freesurfer_${detectedType}`, text)
+            setUploadedFiles(prev => ({
+              ...prev,
+              [detectedType]: { fileName: file.name, isValid: true }
+            }))
+            matchedCount++
+          } catch {
+            setUploadedFiles(prev => ({
+              ...prev,
+              [detectedType]: { fileName: file.name, isValid: false, error: t.upload.errors.downloadFailed }
+            }))
+          }
+        }
+      }
+
+      if (matchedCount === 0) {
+        setError(t.upload.errors.noMatchingFiles)
+      } else {
+        setError(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.upload.errors.githubImportFailed)
+    } finally {
+      setIsLoadingGithub(false)
+    }
+  }, [t, githubUrl])
 
   // 处理文件夹拖拽区域的拖放
   const handleFolderDrop = useCallback(async (e: React.DragEvent) => {
@@ -218,7 +400,8 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
   }
 
   const clearData = () => {
-    fileTypes.forEach(f => localStorage.removeItem(`freesurfer_${f.key}`))
+    fileTypesConfig.forEach(f => localStorage.removeItem(`freesurfer_${f.key}`))
+    localStorage.removeItem('freesurfer_subjectName')
     setUploadedFiles({
       lhDKT: { isValid: false },
       rhDKT: { isValid: false },
@@ -226,6 +409,8 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
       rhAparc: { isValid: false },
       aseg: { isValid: false },
     })
+    setSubjectNames({})
+    setSubjectNameWarning(null)
     setError(null)
   }
 
@@ -234,11 +419,49 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
   return (
     <div className="data-upload">
       <div className="upload-header">
-        <h1>🧠 FreeSurfer 数据上传</h1>
-        <p>请上传您的 FreeSurfer 分析结果文件以开始脑结构分析</p>
+        <h1>{t.upload.title}</h1>
+        <p>{t.upload.subtitle}</p>
       </div>
 
       {error && <div className="error-message">❌ {error}</div>}
+      {subjectNameWarning && <div className="warning-message">⚠️ {subjectNameWarning}</div>}
+      
+      {/* 显示检测到的被试名称 */}
+      {Object.keys(subjectNames).length > 0 && !subjectNameWarning && (
+        <div className="subject-info">
+          <span className="subject-icon">👤</span>
+          <span>{t.upload.subject}: <strong>{Object.values(subjectNames)[0]}</strong></span>
+        </div>
+      )}
+
+      {/* GitHub 导入区域 */}
+      <div className="github-import-section">
+        <div className="github-header">
+          <span className="github-icon">🔗</span>
+          <h3>{t.upload.githubImport}</h3>
+        </div>
+        <div className="github-input-row">
+          <input
+            type="text"
+            className="github-url-input"
+            placeholder={t.upload.githubPlaceholder}
+            value={githubUrl}
+            onChange={(e) => setGithubUrl(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleGitHubImport()}
+          />
+          <button 
+            className={`github-import-button ${isLoadingGithub ? 'loading' : ''}`}
+            onClick={handleGitHubImport}
+            disabled={isLoadingGithub}
+          >
+            {isLoadingGithub ? t.upload.importing : t.upload.importButton}
+          </button>
+        </div>
+      </div>
+
+      <div className="divider">
+        <span>{t.upload.orDragLocalFolder}</span>
+      </div>
 
       {/* 文件夹拖拽区域 */}
       <div 
@@ -249,14 +472,14 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
       >
         <div className="folder-drop-content">
           <span className="folder-icon">📂</span>
-          <h3>拖拽 stats 文件夹到这里</h3>
-          <p>自动识别并匹配所有 FreeSurfer stats 文件</p>
-          <p className="folder-hint">已识别 {uploadedCount}/5 个文件</p>
+          <h3>{t.upload.dragFolder}</h3>
+          <p>{t.upload.dragFolderHint}</p>
+          <p className="folder-hint">{t.upload.recognizedFiles} {uploadedCount}/5 {t.upload.fileDescription}</p>
         </div>
       </div>
 
       <div className="divider">
-        <span>或者单独上传每个文件</span>
+        <span>{t.upload.orUploadIndividually}</span>
       </div>
 
       <div className="upload-grid">
@@ -285,7 +508,7 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
                 ) : (
                   <>
                     <div className="drop-icon">📁</div>
-                    <p>拖拽或点击选择</p>
+                    <p>{t.upload.dragOrClick}</p>
                     <p className="file-hint">{hint}</p>
                   </>
                 )}
@@ -304,26 +527,26 @@ export default function DataUpload({ onDataUploaded, onCancel }: Props) {
       <div className="upload-actions">
         {onCancel && (
           <button className="cancel-button" onClick={onCancel}>
-            ← 返回
+            {t.common.back}
           </button>
         )}
         <button className="clear-button" onClick={clearData} disabled={uploadedCount === 0}>
-          清除数据
+          {t.upload.clearData}
         </button>
         <button className={`proceed-button ${canProceed ? 'ready' : ''}`} onClick={handleProceed} disabled={!canProceed}>
-          {canProceed ? '开始分析 🚀' : `请上传所有文件 (${uploadedCount}/5)`}
+          {canProceed ? t.upload.startAnalysis : `${t.upload.uploadAllFiles} (${uploadedCount}/5)`}
         </button>
       </div>
 
       <div className="upload-help">
-        <h4>📋 文件说明</h4>
+        <h4>{t.upload.helpSection.title}</h4>
         <ul>
-          <li><strong>lh/rh.aparc.DKTatlas.stats</strong> - DKT 分区皮层统计</li>
-          <li><strong>lh/rh.aparc.stats</strong> - Desikan 分区皮层统计</li>
-          <li><strong>aseg.stats</strong> - 皮下结构和总体积统计</li>
+          <li><strong>{t.upload.helpSection.lhrhDKT}</strong></li>
+          <li><strong>{t.upload.helpSection.lhrhAparc}</strong></li>
+          <li><strong>{t.upload.helpSection.aseg}</strong></li>
         </ul>
-        <p>💡 这些文件位于 FreeSurfer 输出目录的 <code>stats/</code> 文件夹中</p>
-        <p>💡 支持直接拖拽整个 <code>stats</code> 文件夹，自动识别所需文件</p>
+        <p>{t.upload.helpSection.locationHint}</p>
+        <p>{t.upload.helpSection.folderDragHint}</p>
       </div>
     </div>
   )

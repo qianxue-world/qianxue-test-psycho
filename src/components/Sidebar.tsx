@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n'
 import './Sidebar.css'
 
 interface SidebarProps {
@@ -6,11 +7,13 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+  const { t } = useI18n()
+  
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <span className="sidebar-logo"></span>
-        <h1>潜学分析平台</h1>
+        <h1>{t.sidebar.title}</h1>
       </div>
       
       <nav className="sidebar-nav">
@@ -19,7 +22,7 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
           onClick={() => onPageChange('overview')}
         >
           <span className="nav-icon">📊</span>
-          <span className="nav-text">整体报告</span>
+          <span className="nav-text">{t.sidebar.overview}</span>
         </button>
         
         <button
@@ -27,7 +30,7 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
           onClick={() => onPageChange('special')}
         >
           <span className="nav-icon">🔬</span>
-          <span className="nav-text">DKT 精细分析</span>
+          <span className="nav-text">{t.sidebar.special}</span>
         </button>
       </nav>
       

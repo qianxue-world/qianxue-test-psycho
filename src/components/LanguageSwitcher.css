@@ -1,0 +1,97 @@
+/* 🌍 可爱语言切换器 */
+.language-switcher {
+  position: relative;
+}
+
+.language-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(255, 158, 199, 0.2);
+}
+
+.language-button:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(255, 158, 199, 0.3),
+    0 0 30px rgba(201, 160, 255, 0.2);
+}
+
+.language-button .flag {
+  font-size: 1.3em;
+}
+
+.language-button .arrow {
+  font-size: 0.8em;
+  opacity: 0.9;
+  transition: transform 0.3s ease;
+}
+
+.language-switcher:hover .language-button .arrow {
+  transform: rotate(180deg);
+}
+
+.language-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  background: linear-gradient(135deg, #fff 0%, #ffeef8 50%, #f5e6ff 100%);
+  border-radius: 20px;
+  box-shadow: 
+    0 8px 30px rgba(255, 158, 199, 0.3),
+    0 0 50px rgba(201, 160, 255, 0.2);
+  overflow: hidden;
+  z-index: 1000;
+  min-width: 160px;
+  border: 2px solid rgba(255, 158, 199, 0.2);
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.language-option:hover {
+  background: linear-gradient(135deg, rgba(255, 158, 199, 0.15) 0%, rgba(201, 160, 255, 0.15) 100%);
+}
+
+.language-option.active {
+  background: linear-gradient(135deg, #ff9ec7 0%, #c9a0ff 100%);
+}
+
+.language-option.active .name {
+  color: white;
+  font-weight: 700;
+}
+
+.language-option .flag {
+  font-size: 1.4em;
+}
+
+.language-option .name {
+  color: #6b4c7a;
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.language-option:not(.active):hover .name {
+  color: #ff6b9d;
+}

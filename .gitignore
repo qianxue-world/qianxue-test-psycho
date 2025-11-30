@@ -31,3 +31,6 @@ build/
 .env
 .env.local
 .env.*.local
+
+# subject files for testing
+**/stats/**
