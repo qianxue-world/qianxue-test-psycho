@@ -18,7 +18,7 @@ resources:
 
 images:
 - name: omaticaya/qianxue-test-mindpotential
-  newTag: 1.0.9
+  newTag: 1.0.10
 
 commonLabels:
   app: mind-eden
