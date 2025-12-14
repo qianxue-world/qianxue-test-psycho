@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: mind-eden
-        image: omaticaya/mind-eden:1.0.10
+        image: omaticaya/mind-eden:1.0.12
         imagePullPolicy: Always
         ports:
         - containerPort: 80

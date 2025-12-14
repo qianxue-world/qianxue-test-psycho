@@ -18,7 +18,7 @@ resources:
 
 images:
 - name: omaticaya/mind-eden
-  newTag: 1.0.11
+  newTag: 1.0.12
 
 commonLabels:
   app: mind-eden
