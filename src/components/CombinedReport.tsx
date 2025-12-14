@@ -445,8 +445,8 @@ export default function CombinedReport({ isClearing = false, onShowClearButton }
         {/* 认知指标 */}
         {analysis && (
           <section className="indices-section">
-            <h2>🎯 {'认知能力指标'}</h2>
-            <p className="section-hint">{'点击查看详情'}</p>
+            <h2>{t.dkt.cognitiveAbility}</h2>
+            <p className="section-hint">{t.common.clickForDetails}</p>
             <div className="indices-grid">
               {analysis.indices.map((index, i) => (
                 <div key={i} className="index-card-clickable compact" onClick={() => handleIndexClick(index)}>
@@ -481,7 +481,7 @@ export default function CombinedReport({ isClearing = false, onShowClearButton }
         {/* 特殊发现 */}
         {analysis && analysis.summary.specialFeatures.length > 0 && (
           <section className="special-section">
-            <h2>{t.overview.specialFeatures || '✨ 特殊发现'}</h2>
+            <h2>{t.overview.specialFeatures}</h2>
             <div className="special-cards">
               {analysis.summary.specialFeatures.map((feature, i) => (
                 <div key={i} className="special-card">
@@ -496,7 +496,7 @@ export default function CombinedReport({ isClearing = false, onShowClearButton }
         {/* 建议 */}
         {analysis && analysis.summary.recommendations.length > 0 && (
           <section className="suggestions-section">
-            <h2>{t.overview.recommendations || '💡 个性化建议'}</h2>
+            <h2>{t.overview.recommendations}</h2>
             <div className="suggestions-list">
               {analysis.summary.recommendations.map((rec, i) => (
                 <div key={i} className="suggestion-item">
@@ -510,7 +510,7 @@ export default function CombinedReport({ isClearing = false, onShowClearButton }
 
         {/* 页脚 */}
         <footer className="report-footer">
-          <p>{t.overview.disclaimer || '⚠️ 本报告仅供参考，不构成医学诊断。如有疑问请咨询专业医生。'}</p>
+          <p>{t.overview.disclaimer}</p>
         </footer>
       </div>
     </div>
